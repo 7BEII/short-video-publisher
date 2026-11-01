@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>短视频发布</title>
+<style>
+  :root{--bg:#0e0e11;--panel:#16161a;--panel2:#1d1d22;--line:#2a2a31;--text:#ececf1;--muted:#8b8b96;--acc:#7c5cff;--ok:#22c55e;--err:#f87171;--r:12px}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  .app{display:grid;grid-template-columns:340px 1fr;height:100vh}
+  aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px;gap:16px;overflow:auto}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  h1{font-size:16px;margin:0;font-weight:600;letter-spacing:.5px}
+  .icon{border:none;background:none;font-size:17px;cursor:pointer;color:var(--muted);padding:2px 4px}.icon:hover{color:var(--text)}
+  .lbl{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  .drop:hover,.drop.over{border-color:var(--acc);color:var(--text)}
+  .vid{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:var(--r);padding:8px}
+  .vid video{width:84px;height:48px;object-fit:cover;border-radius:6px;background:#000;flex:none}
+  .vid .n{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vid .m{color:var(--muted);font-size:11px}
+  .vid>div{min-width:0;flex:1}
+  textarea,input{width:100%;font:inherit;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--panel2)}
+  textarea{resize:none}
+  textarea:focus,input:focus{outline:none;border-color:var(--acc)}
+  ::placeholder{color:#5c5c66}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;user-select:none;font-size:13px;color:var(--muted);transition:.15s}
+  .chip:hover{color:var(--text)}
+  .chip.on{background:rgba(124,92,255,.15);border-color:var(--acc);color:var(--text)}
+  .chip small{opacity:.6;margin-left:3px;font-size:11px}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel2);padding:7px 14px;color:var(--text)}
+  button:hover{border-color:#44444d}
+  button.pri{background:var(--acc);border-color:var(--acc);color:#fff;padding:11px;font-weight:500;width:100%}
+  button.pri:hover{filter:brightness(1.1)}
+  button.pri:disabled{opacity:.3;cursor:not-allowed;filter:none}
+  button.sec{width:100%;padding:11px;font-weight:500}
+  button.ghost{border:none;background:none;color:var(--muted);padding:4px 8px}button.ghost:hover{color:var(--text)}
+  .sp{flex:1}
+  .foot{margin-top:auto;display:grid;gap:8px}
+  .foot .tip{font-size:12px;color:var(--muted);text-align:center}
+  main{display:flex;flex-direction:column;min-width:0;height:100vh}
+  .tabs{display:flex;gap:2px;padding:14px 20px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{border:none;background:none;border-radius:8px 8px 0 0;padding:9px 14px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap;border-bottom:2px solid transparent}
+  .tab:hover{color:var(--text)}
+  .tab.on{color:var(--text);border-bottom-color:var(--acc)}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}.dot.ok{background:var(--ok)}.dot.err{background:var(--err)}.dot.ld{background:var(--acc);animation:p 1s infinite}
+  @keyframes p{50%{opacity:.3}}
+  .pane{flex:1;display:flex;flex-direction:column;padding:20px 24px;gap:14px;min-height:0}
+  .bar{display:flex;align-items:center;gap:8px}
+  .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px}
+  .f label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .f label em{font-style:normal}.f label em.bad{color:var(--err)}
+  .f.grow{flex:1;display:flex;flex-direction:column;min-height:0}.f.grow textarea{flex:1}
+  .empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-direction:column;gap:6px}
+  .st{font-size:12px}.st.ok{color:var(--ok)}.st.err{color:var(--err)}
+  dialog{border:1px solid var(--line);border-radius:16px;padding:24px;width:min(420px,92vw);background:var(--panel);color:var(--text)}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  dialog h3{margin:0 0 16px;font-size:16px}
+  dialog .f{margin-bottom:12px}
+  .muted{color:var(--muted);font-size:12px}
+  .hide{display:none!important}
+  @media (max-width:820px){body{overflow:auto}.app{grid-template-columns:1fr;height:auto}main{height:80vh}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="top"><h1>短视频发布</h1><button class="icon" id="btnSet" title="设置">⚙</button></div>
+    <div>
+      <div class="lbl">视频</div>
+      <div class="drop" id="drop">点击或拖入视频</div>
+      <div class="vid hide" id="vid"><video id="vprev" muted></video><div><div class="n" id="vname"></div><div class="m" id="vmeta"></div></div><button class="ghost" id="vclear">更换</button></div>
+      <input type="file" id="vfile" accept="video/*" hidden>
+    </div>
+    <div><div class="lbl">内容</div><textarea id="brief" rows="3" placeholder="一句话说说视频讲了什么"></textarea></div>
+    <div><div class="lbl">渠道</div><div class="chips" id="chips"></div></div>
+    <div class="foot">
+      <button class="pri" id="btnGo">✦ 生成文案</button>
+      <div class="tip" id="barTip"></div>
+    </div>
+  </aside>
+  <main>
+    <div class="tabs hide" id="tabs"></div>
+    <div class="pane" id="pane"></div>
+  </main>
+</div>
+
+<dialog id="dlg">
+  <h3>设置</h3>
+  <div class="f"><label>模型接口（OpenAI 兼容）</label><input id="cBase" placeholder="https://api.deepseek.com"></div>
+  <div class="f"><label>API Key</label><input id="cKey" type="password" placeholder="sk-…（只存在本机浏览器）"></div>
+  <div class="f"><label>模型</label><input id="cModel" placeholder="deepseek-chat"></div>
+  <div class="f"><label>本地上传服务</label><input id="cPub" placeholder="http://127.0.0.1:8765"></div>
+  <p class="muted">不填 Key 时用示例文案演示；上传需要本机运行发布服务。</p>
+  <div style="display:flex;justify-content:flex-end"><button id="cClose">完成</button></div>
+</dialog>
+
+<script>
+const CH = {
+  douyin:   {name:'抖音',   title:30, body:1000, tags:10, tagLen:30},
+  bilibili: {name:'B站',    title:80, body:2000, tags:10, tagLen:20, tagMin:1},
+  wechat_channels:{name:'视频号', title:16, titleMin:6, titleLabel:'短标题', body:1000, tags:10, tagLen:30},
+  xiaohongshu:{name:'小红书', title:20, body:1000, tags:10, tagLen:30, draft:true},
+  zhihu:    {name:'知乎',   title:50, body:1000, tags:5, tagLen:30, tagMin:1},
+  youtube:  {name:'YouTube', title:100, body:5000, tags:15, tagLen:30, bodyLabel:'说明'},
+  wechat_mp:{name:'公众号', title:64, body:2000, tags:0, draft:true, bodyLabel:'摘要'},
+};
+const STYLE = {
+  douyin:'口语化、抓眼球，前3秒钩子感',
+  bilibili:'信息量足，适合长简介，可分段',
+  wechat_channels:'简洁稳重，短标题必须6到16字',
+  xiaohongshu:'种草笔记风，emoji 适量，分段短句',
+  zhihu:'理性专业，先给结论',
+  youtube:'YouTube 风格，关键词前置利于搜索，标题可中英双语，说明含要点与时间轴占位',
+  wechat_mp:'公众号标题与120字以内摘要',
+};
+const K='svp-v2', $=id=>document.getElementById(id), len=s=>[...(s||'')].length;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let S=Object.assign({brief:'',ch:[],out:{},cfg:{base:'',key:'',model:'',pub:''},video:null,pub:{}},JSON.parse(localStorage.getItem(K)||'{}'));
+const save=()=>localStorage.setItem(K,JSON.stringify(S));
+
+/* 视频 */
+const vf=$('vfile');let videoFile=null;
+$('drop').onclick=()=>vf.click();
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');e.dataTransfer.files[0]&&setVideo(e.dataTransfer.files[0])};
+vf.onchange=()=>vf.files[0]&&setVideo(vf.files[0]);
+$('vclear').onclick=()=>vf.click();
+function setVideo(f){videoFile=f;const v=$('vprev');v.src=URL.createObjectURL(f);
+  v.onloadedmetadata=()=>{S.video={name:f.name,size:f.size,dur:v.duration,w:v.videoWidth,h:v.videoHeight};save();renderVideo();};
+  S.video={name:f.name,size:f.size};renderVideo();}
+function renderVideo(){const v=S.video;$('drop').classList.toggle('hide',!!v);$('vid').classList.toggle('hide',!v);if(!v)return;
+  $('vname').textContent=v.name;const d=v.dur?`${Math.floor(v.dur/60)}:${String(Math.round(v.dur%60)).padStart(2,'0')}`:'';
+  $('vmeta').textContent=[`${(v.size/1048576).toFixed(1)} MB`,d,v.w?`${v.w}×${v.h}`:''].filter(Boolean).join(' · ');}
+
+/* 渠道 */
+function renderChips(){$('chips').innerHTML=Object.entries(CH).map(([id,c])=>`<div class="chip ${S.ch.includes(id)?'on':''}" data-id="${id}">${c.name}${c.draft?'<small>草稿</small>':''}</div>`).join('');
+  $('chips').querySelectorAll('.chip').forEach(el=>el.onclick=()=>{const id=el.dataset.id;S.ch=S.ch.includes(id)?S.ch.filter(x=>x!==id):[...S.ch,id];save();renderChips();renderResults();});
+  renderGo();}
+$('brief').value=S.brief;$('brief').oninput=e=>{S.brief=e.target.value;save()};
+
+/* 生成 */
+async function genOne(id){
+  const c=CH[id];S.out[id]={loading:true};renderResults();
+  try{S.out[id]=S.cfg.key?await callLLM(id):demo(id);}catch(e){S.out[id]={error:String(e.message||e)}}
+  save();renderResults();
+}
+async function callLLM(id){
+  const c=CH[id];const base=(S.cfg.base||'https://api.deepseek.com').replace(/\/$/,'');
+  const sys='你是中文短视频运营。只输出 JSON：{"title":"","body":"","tags":[]}，tags 不带#。';
+  const user=`平台：${c.name}\n风格：${STYLE[id]}\n${c.titleLabel||'标题'}：${c.titleMin?c.titleMin+'到':'不超过'}${c.title}字\n${c.bodyLabel||'正文'}：不超过${c.body}字\n话题：${c.tags?`${c.tagMin||0}到${c.tags}个，每个不超过${c.tagLen}字`:'不需要'}\n视频文件：${S.video?.name||'未提供'}\n视频内容：${S.brief||'（未填写）'}`;
+  const r=await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S.cfg.key},
+    body:JSON.stringify({model:S.cfg.model||'deepseek-chat',messages:[{role:'system',content:sys},{role:'user',content:user}],response_format:{type:'json_object'},temperature:.8})});
+  if(!r.ok)throw new Error('接口返回 '+r.status);
+  const j=await r.json();const o=JSON.parse(j.choices[0].message.content.replace(/^```json|```$/g,''));
+  return {title:o.title||'',body:o.body||'',tags:(o.tags||[]).map(t=>String(t).replace(/^#/,'')).slice(0,c.tags)};
+}
+function demo(id){const c=CH[id],b=(S.brief||'这期视频的核心内容').trim();const cut=(s,n)=>[...s].slice(0,n).join('');
+  const t={douyin:`3分钟看懂：${b}`,bilibili:`【干货】${b}｜完整流程分享`,wechat_channels:cut(b,14).padEnd(6,'！'),youtube:`${b} | Full Tutorial`,xiaohongshu:`${cut(b,14)}✨`,zhihu:`${b}，我的实践总结`,wechat_mp:`${b}：一篇讲清楚`}[id];
+  return {title:cut(t,c.title),body:id==='xiaohongshu'?`今天分享：${b}\n\n✅ 要点一\n✅ 要点二\n✅ 要点三\n\n有问题评论区见～`:`${b}。\n\n视频里把关键步骤都演示了一遍，建议收藏慢慢看。`,tags:c.tags?['教程','干货','经验分享'].slice(0,c.tags):[],demo:true};}
+const readyIds=()=>S.ch.filter(id=>S.out[id]&&!S.out[id].loading&&!S.out[id].error);
+let busy=false;
+function renderGo(){const b=$('btnGo'),r=readyIds(),loading=S.ch.some(id=>S.out[id]?.loading),miss=S.ch.filter(id=>!S.out[id]||S.out[id].error);
+  b.disabled=busy||loading||!S.ch.length;
+  if(busy)b.textContent='上传中…';else if(loading)b.textContent='生成中…';
+  else if(miss.length||!r.length)b.textContent='✦ 生成文案';else b.textContent=`↑ 上传 ${r.length} 个渠道`;
+  $('barTip').innerHTML=r.length&&!miss.length&&!loading?`<a href="#" id="regen" style="color:var(--muted)">全部重写</a>`:'';
+  const g=$('regen');if(g)g.onclick=e=>{e.preventDefault();S.active=S.ch[0];S.ch.forEach(genOne)};}
+$('btnGo').onclick=()=>{const miss=S.ch.filter(id=>!S.out[id]||S.out[id].error);
+  if(miss.length||!readyIds().length){S.active=miss[0]||S.ch[0];(miss.length?miss:S.ch).forEach(genOne)}else publish();};
+
+/* 结果：标签页，一次看一个平台 */
+function counter(v,max,min){const l=len(v);return `<em class="${l>max||(min&&l<min)?'bad':''}">${l}/${max}</em>`}
+function bad(id){const c=CH[id],o=S.out[id];if(!o||o.loading||o.error)return false;
+  return len(o.title)>c.title||(c.titleMin&&len(o.title)<c.titleMin)||len(o.body)>c.body||(c.tags&&(o.tags.length>c.tags||o.tags.some(t=>len(t)>c.tagLen)||(c.tagMin&&o.tags.length<c.tagMin)));}
+function renderResults(){
+  const ids=S.ch.filter(id=>S.out[id]);
+  if(!ids.includes(S.active))S.active=ids[0];
+  $('tabs').classList.toggle('hide',!ids.length);
+  $('tabs').innerHTML=ids.map(id=>{const o=S.out[id],p=S.pub[id];const d=o.loading?'ld':o.error||bad(id)||(p&&!p.ok)?'err':'ok';
+    return `<button class="tab ${id===S.active?'on':''}" data-t="${id}"><span class="dot ${d}"></span>${CH[id].name}</button>`}).join('');
+  $('tabs').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.active=b.dataset.t;save();renderResults()});
+  const pane=$('pane'),id=S.active;
+  if(!id){pane.innerHTML=`<div class="empty"><div style="font-size:28px">✦</div><div>选好视频和渠道，点「生成文案」</div></div>`;}
+  else{const c=CH[id],o=S.out[id],p=S.pub[id];
+    const head=`<div class="bar"><b>${c.name}</b>${c.draft?'<span class="tag">存草稿·手动发布</span>':''}${o.demo?'<span class="tag">示例</span>':''}<span class="sp"></span>${p?`<span class="st ${p.ok?'ok':'err'}">${esc(p.msg)}</span>`:''}<button class="ghost" data-copy="${id}">复制</button><button class="ghost" data-re="${id}">重写</button></div>`;
+    if(o.loading)pane.innerHTML=head+'<div class="empty">生成中…</div>';
+    else if(o.error)pane.innerHTML=head+`<div class="empty" style="color:var(--err)">${esc(o.error)}</div>`;
+    else pane.innerHTML=head+`
+      <div class="f"><label>${c.titleLabel||'标题'}${counter(o.title,c.title,c.titleMin)}</label><input data-k="title" value="${esc(o.title)}"></div>
+      <div class="f grow"><label>${c.bodyLabel||'正文'}${counter(o.body,c.body)}</label><textarea data-k="body">${esc(o.body)}</textarea></div>
+      ${c.tags?`<div class="f"><label>话题<em class="${o.tags.length>c.tags||o.tags.some(t=>len(t)>c.tagLen)||(c.tagMin&&o.tags.length<c.tagMin)?'bad':''}">${o.tags.length}/${c.tags}</em></label><input data-k="tags" value="${esc(o.tags.map(t=>'#'+t).join(' '))}"></div>`:''}`;
+    pane.querySelectorAll('[data-k]').forEach(el=>el.oninput=()=>{const k=el.dataset.k;
+      o[k]=k==='tags'?el.value.split(/[\s,，#]+/).filter(Boolean):el.value;save();
+      const em=el.parentElement.querySelector('em');
+      if(k==='tags'){em.textContent=`${o.tags.length}/${c.tags}`}else{const max=k==='title'?c.title:c.body,min=k==='title'?c.titleMin:0,l=len(el.value);em.textContent=`${l}/${max}`;em.className=l>max||(min&&l<min)?'bad':''}
+      const dot=$('tabs').querySelector(`[data-t="${id}"] .dot`);if(dot)dot.className='dot '+(bad(id)?'err':'ok');});
+    pane.querySelector('[data-re]').onclick=()=>genOne(id);
+    pane.querySelector('[data-copy]').onclick=e=>{navigator.clipboard.writeText(`${o.title}\n\n${o.body}\n\n${(o.tags||[]).map(t=>'#'+t).join(' ')}`.trim());e.target.textContent='已复制';setTimeout(()=>e.target.textContent='复制',1200)};
+  }
+  renderGo();
+}
+
+/* 上传：POST 到本机发布服务 */
+async function publish(){
+  const ids=S.ch.filter(id=>S.out[id]&&!S.out[id].loading&&!S.out[id].error);
+  if(!videoFile){alert('请重新选择一次视频文件（浏览器刷新后需要重新选择）');return}
+  const base=(S.cfg.pub||'http://127.0.0.1:8765').replace(/\/$/,'');
+  busy=true;renderGo();
+  for(const id of ids){
+    const fd=new FormData();fd.append('video',videoFile);fd.append('platform',id);fd.append('mode',CH[id].draft?'draft':'publish');
+    fd.append('payload',JSON.stringify(S.out[id]));
+    try{const r=await fetch(base+'/publish',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+      S.pub[id]={ok:r.ok,msg:r.ok?(j.message||(CH[id].draft?'草稿已保存':'已提交')):(j.message||'失败 '+r.status)};}
+    catch{S.pub[id]={ok:false,msg:'连不上本地上传服务'}}
+    save();renderResults();
+  }
+  busy=false;renderGo();
+}
+
+/* 设置 */
+const dlg=$('dlg');
+$('btnSet').onclick=()=>{$('cBase').value=S.cfg.base;$('cKey').value=S.cfg.key;$('cModel').value=S.cfg.model;$('cPub').value=S.cfg.pub;dlg.showModal()};
+$('cClose').onclick=()=>{S.cfg={base:$('cBase').value.trim(),key:$('cKey').value.trim(),model:$('cModel').value.trim(),pub:$('cPub').value.trim()};save();dlg.close()};
+
+S.video=null;renderVideo();renderChips();renderResults();
+</script>
+</body>
+</html>
